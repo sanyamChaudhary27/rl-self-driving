@@ -1,1 +1,7 @@
 /myvenv
+
+__pycache__/
+*.py[cod]
+
+checkpoints/
+runs/
