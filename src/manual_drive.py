@@ -4,6 +4,8 @@ import pygame
 
 from env.car import Car
 
+from env.road import Road
+
 
 WIDTH = 1000
 HEIGHT = 700
@@ -103,6 +105,8 @@ def main():
         velocity=10.0,
     )
 
+    road = Road()
+
     running = True
 
     while running:
@@ -155,6 +159,62 @@ def main():
         # ------------------------------------------
 
         screen.fill((35, 40, 45))
+
+        # ------------------------------------------
+        # ROAD
+        # ------------------------------------------
+
+        center_points = []
+        left_points = []
+        right_points = []
+
+        for x_pixel in range(WIDTH):
+
+            world_x = (
+                x_pixel - WIDTH / 2
+            ) / SCALE
+
+            center_y = road.center_y(world_x)
+
+            left_y = center_y + road.half_width
+            right_y = center_y - road.half_width
+
+            center_points.append(
+                world_to_screen(world_x, center_y)
+            )
+
+            left_points.append(
+                world_to_screen(world_x, left_y)
+            )
+
+            right_points.append(
+                world_to_screen(world_x, right_y)
+            )
+
+
+        pygame.draw.lines(
+            screen,
+            (180, 180, 180),
+            False,
+            left_points,
+            2,
+        )
+
+        pygame.draw.lines(
+            screen,
+            (180, 180, 180),
+            False,
+            right_points,
+            2,
+        )
+
+        pygame.draw.lines(
+            screen,
+            (100, 100, 100),
+            False,
+            center_points,
+            1,
+        )
 
         car_points = get_car_polygon(car)
 
