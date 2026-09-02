@@ -21,8 +21,7 @@ FPS = 60
 #
 SCALE = 8
 
-
-def world_to_screen(x, y):
+def world_to_screen(x, y, camera_x=0.0, camera_y=0.0):
     """
     Convert physics coordinates into Pygame coordinates.
 
@@ -32,14 +31,13 @@ def world_to_screen(x, y):
     Pygame:
         +y points downward
     """
-
-    screen_x = WIDTH / 2 + x * SCALE
-    screen_y = HEIGHT / 2 - y * SCALE
+    
+    screen_x = WIDTH / 2 + (x - camera_x) * SCALE
+    screen_y = HEIGHT / 2 - (y - camera_y) * SCALE
 
     return int(screen_x), int(screen_y)
 
-
-def get_car_polygon(car):
+def get_car_polygon(car, camera_x, camera_y):
     """
     Create four corners representing the car.
     """
@@ -60,8 +58,6 @@ def get_car_polygon(car):
     sin_h = math.sin(car.heading)
 
     for local_x, local_y in local_points:
-
-        # Rotate local point by car heading
         rotated_x = (
             local_x * cos_h
             - local_y * sin_h
@@ -72,21 +68,23 @@ def get_car_polygon(car):
             + local_y * cos_h
         )
 
-        # Move it to the car's world position
         world_x = car.x + rotated_x
         world_y = car.y + rotated_y
 
-        # Convert metres -> pixels
         points.append(
-            world_to_screen(world_x, world_y)
+            world_to_screen(
+                world_x,
+                world_y,
+                camera_x,
+                camera_y,
+            )
         )
 
     return points
 
-
 def main():
-
     pygame.init()
+    font = pygame.font.Font(None, 28)
 
     screen = pygame.display.set_mode(
         (WIDTH, HEIGHT)
@@ -155,6 +153,13 @@ def main():
         car.update(dt)
 
         # ------------------------------------------
+        # CAMERA
+        # ------------------------------------------
+
+        camera_x = car.x
+        camera_y = car.y
+
+        # ------------------------------------------
         # DRAW
         # ------------------------------------------
 
@@ -171,8 +176,9 @@ def main():
         for x_pixel in range(WIDTH):
 
             world_x = (
-                x_pixel - WIDTH / 2
-            ) / SCALE
+                camera_x
+                + (x_pixel - WIDTH / 2) / SCALE
+            )
 
             center_y = road.center_y(world_x)
 
@@ -180,15 +186,30 @@ def main():
             right_y = center_y - road.half_width
 
             center_points.append(
-                world_to_screen(world_x, center_y)
+                world_to_screen(
+                    world_x,
+                    center_y,
+                    camera_x,
+                    camera_y,
+                )
             )
 
             left_points.append(
-                world_to_screen(world_x, left_y)
+                world_to_screen(
+                    world_x,
+                    left_y,
+                    camera_x,
+                    camera_y,
+                )
             )
 
             right_points.append(
-                world_to_screen(world_x, right_y)
+                world_to_screen(
+                    world_x,
+                    right_y,
+                    camera_x,
+                    camera_y,
+                )
             )
 
 
@@ -216,7 +237,7 @@ def main():
             1,
         )
 
-        car_points = get_car_polygon(car)
+        car_points = get_car_polygon(car, camera_x, camera_y)
 
         pygame.draw.polygon(
             screen,
@@ -229,6 +250,8 @@ def main():
         center = world_to_screen(
             car.x,
             car.y,
+            camera_x,
+            camera_y,
         )
 
         pygame.draw.circle(
@@ -237,6 +260,65 @@ def main():
             center,
             3,
         )
+
+        # ------------------------------------------
+        # TELEMETRY
+        # ------------------------------------------
+
+        lateral_error = road.lateral_error(
+            car.x,
+            car.y,
+        )
+
+        off_road = road.is_off_road(
+            car.x,
+            car.y,
+        )
+
+        heading_deg = math.degrees(
+            car.heading
+        )
+
+        steering_deg = math.degrees(
+            car.steering_angle
+        )
+
+        road_heading = road.heading(
+            car.x
+        )
+
+        heading_error = (
+            car.heading - road_heading
+        )
+
+        heading_error = math.atan2(
+            math.sin(heading_error),
+            math.cos(heading_error),
+        )
+
+        telemetry = [
+            f"x: {car.x:.1f} m",
+            f"y: {car.y:.1f} m",
+            f"speed: {car.velocity:.1f} m/s",
+            f"heading: {heading_deg:.1f} deg",
+            f"steering: {steering_deg:.1f} deg",
+            f"lateral error: {lateral_error:.2f} m",
+            f"heading error: {math.degrees(heading_error):.1f} deg",
+            f"off road: {off_road}",
+            f"FPS: {clock.get_fps():.1f}",
+        ]
+
+        for i, text in enumerate(telemetry):
+            surface = font.render(
+                text,
+                True,
+                (230, 230, 230),
+            )
+
+            screen.blit(
+                surface,
+                (15, 15 + i * 25),
+            )
 
         pygame.display.flip()
 
