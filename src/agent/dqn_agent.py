@@ -252,3 +252,4 @@ class DQNAgent:
         self.target_network.load_state_dict(
             self.online_network.state_dict()
         )
+
