@@ -43,3 +43,4 @@ class QNetwork(nn.Module):
 
     def forward(self, state):
         return self.network(state)
+
