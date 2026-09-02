@@ -34,9 +34,9 @@ class Car:
         """
         steering must be between -1 and +1
 
-        -1 = maximum left
+        +1 = maximum left
          0 = straight
-        +1 = maximum right
+        -1 = maximum right
         """
 
         steering = max(-1.0, min(1.0, steering))
