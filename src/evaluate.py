@@ -1,3 +1,4 @@
+import argparse
 import math
 import sys
 from pathlib import Path
@@ -169,8 +170,27 @@ def draw_road(
     )
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Evaluate trained DQN driver"
+    )
+
+    parser.add_argument(
+        "--amplitude",
+        type=float,
+        default=8.0,
+        help="Road sine-wave amplitude in metres",
+    )
+
+    return parser.parse_args()
+
+
 def main():
-    env = DrivingEnv()
+    args = parse_args()
+
+    env = DrivingEnv(
+        road_amplitude=args.amplitude
+    )
 
     agent = load_agent(env)
 
@@ -325,6 +345,7 @@ def main():
 
         telemetry = [
             "DQN AUTONOMOUS MODE",
+            f"Road amplitude: {args.amplitude:.1f} m",
             "",
             f"Step: {env.steps}/{env.max_steps}",
             f"Action: {ACTION_NAMES[action]}",

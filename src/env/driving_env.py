@@ -43,7 +43,12 @@ class DrivingEnv(gym.Env):
         "render_modes": [],
     }
 
-    def __init__(self):
+    def __init__(
+        self,
+        road_amplitude=8.0,
+        road_curve_scale=35.0,
+        road_half_width=4.0,
+    ):
         super().__init__()
 
         # ------------------------------------------
@@ -53,7 +58,11 @@ class DrivingEnv(gym.Env):
         self.dt = 0.1
         self.max_steps = 500
 
-        self.road = Road()
+        self.road = Road(
+            amplitude=road_amplitude,
+            curve_scale=road_curve_scale,
+            half_width=road_half_width,
+        )
         self.car = None
         self.steps = 0
         self.previous_steering = 0.0
