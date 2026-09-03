@@ -48,8 +48,17 @@ class DrivingEnv(gym.Env):
         road_amplitude=8.0,
         road_curve_scale=35.0,
         road_half_width=4.0,
+        randomize_amplitude=False,
+        amplitude_range=(4.0, 24.0),
     ):
         super().__init__()
+
+        self.road_amplitude = road_amplitude
+        self.road_curve_scale = road_curve_scale
+        self.road_half_width = road_half_width
+
+        self.randomize_amplitude = randomize_amplitude
+        self.amplitude_range = amplitude_range
 
         # ------------------------------------------
         # SIMULATION
@@ -186,6 +195,7 @@ class DrivingEnv(gym.Env):
                 self.car.x,
                 self.car.y,
             ),
+            "road_amplitude": self.road.amplitude,
         }
 
     # ==========================================================
@@ -201,6 +211,22 @@ class DrivingEnv(gym.Env):
 
         self.steps = 0
         self.previous_steering = 0.0
+
+        if self.randomize_amplitude:
+            amplitude = float(
+                self.np_random.uniform(
+                    self.amplitude_range[0],
+                    self.amplitude_range[1],
+                )
+            )
+        else:
+            amplitude = self.road_amplitude
+
+        self.road = Road(
+            amplitude=amplitude,
+            curve_scale=self.road_curve_scale,
+            half_width=self.road_half_width,
+        )
 
         # Start at a slightly different place
         # each episode.

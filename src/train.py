@@ -43,8 +43,8 @@ EPSILON_DECAY_EPISODES = 200
 
 DEVICE = "cpu"
 
-CHECKPOINT_DIR = "checkpoints"
-RUN_DIR = "runs/dqn_lane_following"
+CHECKPOINT_DIR = "checkpoints/v01_random_amplitude"
+RUN_DIR = "runs/dqn_random_amplitude"
 
 
 # ============================================================
@@ -132,7 +132,10 @@ def main():
     # ENVIRONMENT
     # --------------------------------------------------------
 
-    env = DrivingEnv()
+    env = DrivingEnv(
+        randomize_amplitude=True,
+        amplitude_range=(4.0, 24.0),
+    )
 
     env.action_space.seed(SEED)
 
@@ -375,6 +378,12 @@ def main():
             episode,
         )
 
+        writer.add_scalar(
+            "Environment/RoadAmplitude",
+            info["road_amplitude"],
+            episode,
+        )
+
         # ----------------------------------------------------
         # TERMINAL OUTPUT
         # ----------------------------------------------------
@@ -388,6 +397,7 @@ def main():
         print(
             f"Episode "
             f"{episode + 1:03d}/{NUM_EPISODES} | "
+            f"amp={info['road_amplitude']:4.1f}m | "
             f"reward={episode_reward:8.2f} | "
             f"avg20={average_reward:8.2f} | "
             f"steps={episode_steps:3d} | "

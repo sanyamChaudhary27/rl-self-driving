@@ -49,10 +49,24 @@ ACTION_NAMES = {
 }
 
 
-def load_agent(env):
-    if not CHECKPOINT_PATH.exists():
+def load_agent(env, checkpoint_path=None):
+    if checkpoint_path is None:
+        v01_path = (
+            PROJECT_ROOT
+            / "checkpoints"
+            / "v01_random_amplitude"
+            / "best_dqn.pt"
+        )
+        if v01_path.exists():
+            checkpoint_path = v01_path
+        else:
+            checkpoint_path = CHECKPOINT_PATH
+    else:
+        checkpoint_path = Path(checkpoint_path)
+
+    if not checkpoint_path.exists():
         raise FileNotFoundError(
-            f"Checkpoint not found at {CHECKPOINT_PATH}. "
+            f"Checkpoint not found at {checkpoint_path}. "
             "Please train the agent first using train.py."
         )
 
@@ -63,7 +77,7 @@ def load_agent(env):
     )
 
     checkpoint = torch.load(
-        CHECKPOINT_PATH,
+        checkpoint_path,
         map_location="cpu",
         weights_only=True,
     )
@@ -182,6 +196,13 @@ def parse_args():
         help="Road sine-wave amplitude in metres",
     )
 
+    parser.add_argument(
+        "--checkpoint",
+        type=str,
+        default=None,
+        help="Path to model checkpoint .pt file",
+    )
+
     return parser.parse_args()
 
 
@@ -192,7 +213,7 @@ def main():
         road_amplitude=args.amplitude
     )
 
-    agent = load_agent(env)
+    agent = load_agent(env, checkpoint_path=args.checkpoint)
 
     pygame.init()
 
