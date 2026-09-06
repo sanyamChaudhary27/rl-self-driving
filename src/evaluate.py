@@ -94,6 +94,7 @@ def load_agent(env, checkpoint_path=None):
     agent.online_network.eval()
     agent.target_network.eval()
 
+    print("Checkpoint:", checkpoint_path)
     print(
         "Loaded checkpoint from episode:",
         checkpoint["episode"] + 1,

@@ -106,6 +106,59 @@ def save_checkpoint(
 
 
 # ============================================================
+# VALIDATION SUITE
+# ============================================================
+
+VALIDATION_AMPLITUDES = [8.0, 12.0, 16.0, 20.0, 24.0]
+VALIDATION_SEED = 1001
+VALIDATION_FREQUENCY = 20
+
+
+def evaluate_policy(
+    agent,
+    amplitudes=VALIDATION_AMPLITUDES,
+    eval_seed=VALIDATION_SEED,
+):
+    """
+    Freeze exploration (epsilon=0) and evaluate agent across a fixed
+    battery of road amplitudes using a constant seed.
+    """
+    total_reward = 0.0
+    all_lateral_errors = []
+    successes = 0
+
+    for amp in amplitudes:
+        eval_env = DrivingEnv(
+            road_amplitude=amp,
+            randomize_amplitude=False,
+        )
+        state, info = eval_env.reset(seed=eval_seed)
+        terminated = False
+        truncated = False
+        ep_reward = 0.0
+
+        while not (terminated or truncated):
+            action = agent.select_action(
+                state=state,
+                epsilon=0.0,
+            )
+            next_state, reward, terminated, truncated, info = eval_env.step(action)
+            ep_reward += reward
+            all_lateral_errors.append(abs(info["lateral_error"]))
+            state = next_state
+
+        total_reward += ep_reward
+        if not terminated:
+            successes += 1
+        eval_env.close()
+
+    mean_reward = total_reward / len(amplitudes)
+    mean_lateral = float(np.mean(all_lateral_errors)) if all_lateral_errors else 0.0
+
+    return successes, mean_reward, mean_lateral
+
+
+# ============================================================
 # MAIN TRAINING
 # ============================================================
 
@@ -173,6 +226,7 @@ def main():
     )
 
     best_average_reward = float("-inf")
+    best_val_score = (-1, float("-inf"))
 
     global_step = 0
 
@@ -408,35 +462,58 @@ def main():
         )
 
         # ====================================================
-        # BEST CHECKPOINT
+        # PERIODIC VALIDATION & BEST MODEL SELECTION
         # ====================================================
 
-        # Wait until moving average contains enough episodes.
-        if (
-            len(recent_rewards) == 20
-            and average_reward
-            > best_average_reward
-        ):
-
-            best_average_reward = (
-                average_reward
-            )
-
-            path = os.path.join(
-                CHECKPOINT_DIR,
-                "best_dqn.pt",
-            )
-
-            save_checkpoint(
+        if (episode + 1) % VALIDATION_FREQUENCY == 0:
+            val_successes, val_mean_reward, val_mean_lat = evaluate_policy(
                 agent=agent,
-                episode=episode,
-                path=path,
+                amplitudes=VALIDATION_AMPLITUDES,
+                eval_seed=VALIDATION_SEED,
+            )
+
+            writer.add_scalar(
+                "Validation/Successes",
+                val_successes,
+                episode,
+            )
+            writer.add_scalar(
+                "Validation/MeanReward",
+                val_mean_reward,
+                episode,
+            )
+            writer.add_scalar(
+                "Validation/MeanLateralError",
+                val_mean_lat,
+                episode,
             )
 
             print(
-                "  -> Saved new best model "
-                f"(avg20={average_reward:.2f})"
+                f"  -> [Validation] suite [8..24]: "
+                f"survived={val_successes}/{len(VALIDATION_AMPLITUDES)} | "
+                f"mean_reward={val_mean_reward:8.2f} | "
+                f"mean_lat={val_mean_lat:.2f}m"
             )
+
+            val_score = (val_successes, val_mean_reward)
+            if val_score > best_val_score:
+                best_val_score = val_score
+
+                path = os.path.join(
+                    CHECKPOINT_DIR,
+                    "best_dqn.pt",
+                )
+
+                save_checkpoint(
+                    agent=agent,
+                    episode=episode,
+                    path=path,
+                )
+
+                print(
+                    "  -> Saved new best model across road family "
+                    f"(survived={val_successes}/{len(VALIDATION_AMPLITUDES)}, reward={val_mean_reward:.2f})"
+                )
 
         # ====================================================
         # PERIODIC CHECKPOINT
