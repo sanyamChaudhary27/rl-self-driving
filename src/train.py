@@ -458,7 +458,8 @@ def main():
             f"eps={epsilon:.3f} | "
             f"loss={average_loss:.4f} | "
             f"lat={average_lateral_error:.2f}m | "
-            f"{ending}"
+            f"{ending}",
+            flush=True,
         )
 
         # ====================================================
@@ -492,7 +493,8 @@ def main():
                 f"  -> [Validation] suite [8..24]: "
                 f"survived={val_successes}/{len(VALIDATION_AMPLITUDES)} | "
                 f"mean_reward={val_mean_reward:8.2f} | "
-                f"mean_lat={val_mean_lat:.2f}m"
+                f"mean_lat={val_mean_lat:.2f}m",
+                flush=True,
             )
 
             val_score = (val_successes, val_mean_reward)
@@ -512,7 +514,8 @@ def main():
 
                 print(
                     "  -> Saved new best model across road family "
-                    f"(survived={val_successes}/{len(VALIDATION_AMPLITUDES)}, reward={val_mean_reward:.2f})"
+                    f"(survived={val_successes}/{len(VALIDATION_AMPLITUDES)}, reward={val_mean_reward:.2f})",
+                    flush=True,
                 )
 
         # ====================================================
